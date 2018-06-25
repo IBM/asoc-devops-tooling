@@ -1,2 +1,6 @@
 # https://help.github.com/articles/about-codeowners/
 # Each line is a file pattern followed by one or more owners.
+
+# @bradleycherrin owns any file in the `/jenkins`
+# directory in the root of your repository.
+/jenkins/ @bradleycherrin
