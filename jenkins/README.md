@@ -9,8 +9,8 @@ The files located in this folder are end to end automation using the [Applicatio
 * [JFrog Artifactory](https://jfrog.com/artifactory/)
 
 ## Supported Pipeline Scenarios
-* [Scan a single GitHub Repository & Setup Pull Request Status Checks](#scan-single-gitHub-repository)
-* [Scan all repositories in a GitHub Organization](scan-all-repositories-in-a-gitHuborganization)
+* [Scan a single GitHub Repository & Setup Pull Request Status Checks](#scan-single-github-repository)
+* [Scan all repositories in a GitHub Organization](#scan-all-repositories-in-a-github-organization)
 
 
 ## Jenkins Plugins Required
@@ -27,7 +27,7 @@ The files located in this folder are end to end automation using the [Applicatio
   * **Pinpoint precision when intervention is needed and/or issues arise**. The Blue Ocean UI shows where in the pipeline attention is needed, facilitating exception handling and increasing productivity.
   * **Native integration for branch and pull requests enables maximum developer productivity when collaborating on code with others in GitHub**.
 
-* [**Pipeline**](https://plugins.jenkins.io/workflow-aggregator) - Jenkins Pipeline (or simply "Pipeline" with a capital "P") is a suite of plugins which supports implementing and integrating continuous delivery pipelines into Jenkins.  We will cover more in our [Jenkins Pipeline Use Cases](#jenkins-pipeline-use-cases) section.
+* [**Pipeline**](https://plugins.jenkins.io/workflow-aggregator) - Jenkins Pipeline (or simply "Pipeline" with a capital "P") is a suite of plugins which supports implementing and integrating continuous delivery pipelines into Jenkins.
 
 * [**Docker**](https://plugins.jenkins.io/docker-plugin) - Docker plugin allows user to use a docker host to dynamically provision build agents, run a single build, then tear-down the agent. **Stable Releases:** [1.1.3](https://updates.jenkins.io/download/plugins/docker-plugin/1.1.3/docker-plugin.hpi)
 > **NOTE:** This plugin is critical to pulling docker images from Artifactory dynamically into the Swarm Cloud or your Docker Cloud.  Staying at the above stable releases is typically a good idea.  Upgrading this plugin should come with caution.
