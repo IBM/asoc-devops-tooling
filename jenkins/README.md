@@ -1,6 +1,10 @@
-# IBM Application Security on Cloud Jenkins Automation
+# IBM Application Security on Cloud Jenkins Integrations
 ---
-The files located in this folder are end to end automation using the [Application Security on Cloud service](https://www.ibm.com/us-en/marketplace/application-security-on-cloud/resources) to run **SAST (Static Application Security Testing)** against source code using [Jenkins](https://jenkins.io/).
+The files located in this folder are end to end automation using the [Application Security on Cloud service](https://www.ibm.com/us-en/marketplace/application-security-on-cloud/resources) to run **SAST (Static Application Security Testing)** against source code orchestrated with [Jenkins](https://jenkins.io/).
+
+**It is imperative that we know the the most about the security status of our code before leaving Source Control Management systems and shipping code further down the pipeline.**
+
+Below are [Jenkins Pipeline](https://jenkins.io/doc/book/pipeline/) templates using the [Scripted Pipeline Syntax](https://jenkins.io/doc/book/pipeline/#scripted-pipeline-fundamentals) and guides to help you implement this control before entering continuous integration.
 
 ## Supported Tools & Services
 * [GitHub](https://github.com/)
@@ -8,12 +12,20 @@ The files located in this folder are end to end automation using the [Applicatio
 * [Jenkins](https://jenkins.io/)
 * [JFrog Artifactory](https://jfrog.com/artifactory/)
 
+## Supported Jenkins Executor Operating System
+* Any Linux distribution
+
 ## Supported Pipeline Scenarios
 * [Scan a single GitHub Repository & Setup Pull Request Status Checks](#scan-single-github-repository)
 * [Scan all repositories in a GitHub Organization](#scan-all-repositories-in-a-github-organization)
 
+## Basic Pre-Reqs
+---
+###  Jenkins Plugins Required
+> **NOTE:**  [Install the Jenkins plugins](https://jenkins.io/doc/book/managing/plugins/#installing-a-plugin) below on your Jenkins master before proceeding.
 
-## Jenkins Plugins Required
+* [**IBM Application Security on Cloud**](https://wiki.jenkins.io/display/JENKINS/IBM+Application+Security+On+Cloud+Plugin) - This plugin allows you to integrate Jenkins with IBM Application Security on Cloud
+
 * [**Credentials Binding**](https://plugins.jenkins.io/credentials-binding) - This plugin allows credentials to be bound to environment variables for use in build steps, this is particularly useful for passing username and passwords into builds.
 
 * [**SSH Agent**](https://plugins.jenkins.io/ssh-agent) - This plugin allows you to provide SSH credentials to builds via a ssh-agent in Jenkins.
@@ -29,7 +41,7 @@ The files located in this folder are end to end automation using the [Applicatio
 
 * [**Pipeline**](https://plugins.jenkins.io/workflow-aggregator) - Jenkins Pipeline (or simply "Pipeline" with a capital "P") is a suite of plugins which supports implementing and integrating continuous delivery pipelines into Jenkins.
 
-* [**Docker**](https://plugins.jenkins.io/docker-plugin) - Docker plugin allows user to use a docker host to dynamically provision build agents, run a single build, then tear-down the agent. **Stable Releases:** [1.1.3](https://updates.jenkins.io/download/plugins/docker-plugin/1.1.3/docker-plugin.hpi)
+* [**Docker**](https://plugins.jenkins.io/docker-plugin) - Docker plugin allows user to use a docker host to dynamically provision build agents, run a single build, then tear-down the agent. **Stable Releases:** [1.1.3](https://updates.jenkins.io/download/plugins/docker-plugin/1.1.3/docker-plugin.hpi) or higher
 > **NOTE:** This plugin is critical to pulling docker images from Artifactory dynamically into the Swarm Cloud or your Docker Cloud.  Staying at the above stable releases is typically a good idea.  Upgrading this plugin should come with caution.
 
 * [**Github**](https://plugins.jenkins.io/github) - This plugin integrates Jenkins with Github projects.The plugin currently has three major functionalities:
@@ -43,8 +55,17 @@ The files located in this folder are end to end automation using the [Applicatio
 
 * [**Artifactory**](https://www.jfrog.com/confluence/display/RTF/Jenkins+Artifactory+Plug-in) - The Jenkins Artifactory Plugin brings Artifactory's Build Integration support to Jenkins. This integration allows your build jobs to deploy artifacts automatically to Artifactory and have them linked to the build job that created them.
 
+### Add IBM ASoC Credentials to Jenkins Master
+* Visit `https://yourjenkins/credentials/store/system/domain/_/`
+* Click **Add Credentials**.
+* In the **Kind** drop-down list, select **IBM Application Security on Cloud Credentials**.
+* Enter your [IBM ASoC generated API key details](https://www.ibm.com/support/knowledgecenter/SSYJJF_1.0.0/ApplicationSecurityonCloud/appseccloud_generate_api_key_cm.html).
+
+
 ## Scan Single GitHub Repository
-...
+> **NOTE:**  For most adopters this will be the common scenario used and the recommended approach to drive a review of the repository's code vulnerability reports prior to a Pull Request merger.
+
+
 
 ## Scan all repositories in a GitHub Organization
 ...
