@@ -1,4 +1,4 @@
-# asoc-saclient-auto
+# python-saclientutil
 This project is a Python wrapper around the IBM Application Security on Cloud SAClient utility.
 The SAClient.py script will aid in automation workflows where IBM/HCL do not have out-of-the box plug-ins or integrations.
 
