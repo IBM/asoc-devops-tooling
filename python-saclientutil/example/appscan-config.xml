@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Targets>
+    <Target path="./altoromutual.war">
+		<Include>com.ibm.*</Include>
+	</Target>
+  </Targets>
+  <TargetSettings/>
+</Configuration>
