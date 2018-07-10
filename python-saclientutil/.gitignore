@@ -1,0 +1,6 @@
+__pycache__/
+/*.irx
+/*.json
+/*.html
+/*.zip
+/*stdout.txt
