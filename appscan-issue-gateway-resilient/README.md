@@ -17,7 +17,7 @@ This projects provides the capability to create an IBM Resilient Incident via Ap
   4. Edit the example/resilient.json file to suit your needs. You will need to update it with your API Key/Secret and App ID.
   5. Use your favorite client to submit the resilient.json file to AppScan Issue Gateway. I have included a generic client in the example directory. For more info on that, see below.
 
-#The Generic Client
+# The Generic Client
 AIG_GenericClient.py is included in the example directory. It uses "Requests" python library to submit your JSON file to AppScan Issue Gateway and monitor its progress.
 For useage instructions issue:
 `python AIG_GenericClient.py -h`
@@ -36,7 +36,6 @@ For useage instructions issue:
 </pre>
 
 # Run the Example:  
-Print the help and usage information  
 `python AIG_GenericClient.py -r 60 localhost 8080 ./resilient.json`  
 This example will submit the resilient.json file to AppScan Issue Gateway running on localhost port 8080.
 It will follow the request status to completion, printing out the status to the console.
