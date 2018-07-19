@@ -5,23 +5,23 @@ This projects provides the capability to create an IBM Resilient Incident via Ap
   1. Have an IBM Application Security on Cloud account with API Key
   2. Have API access to an IBM Resilient instance
   3. Install AppScan Issue Gateway - See links for download
+  4. Python and the Resilient python library will need to be installed "pip install resilient".
  
 # Getting Started:
   1. Setup the AppScan Issue Gateway by downloading the latest version from the HCL GitHub.
   2. Clone the "resilient" directory from this repository to the "providers" directory in the AppScan Issue Gateway Install.
-  3. Python and the Resilient python library will need to be installed "pip install resilient".
-  4. Edit the "app.config" file to reflect your IBM Resilient Info. 
+  3. Edit the "app.config" file to reflect your IBM Resilient Info. 
     *Export your TLS Certificate from your Resilient server and save. Add the path to the app.config file
     *Add username and password to app.config. For added security, use a keystore instead (see "Helpful Links" for help) 
     *The hostname on the certificate must match EXACTLY the hostname for the Resilient server.
-  5. Edit the example/resilient.json file to suit your needs. You will need to update it with your API Key/Secret and App ID.
-  6. Use your favorite client to submit the resilient.json file to AppScan Issue Gateway. I have included a generic client in the example directory. For more info on that, see below.
+  4. Edit the example/resilient.json file to suit your needs. You will need to update it with your API Key/Secret and App ID.
+  5. Use your favorite client to submit the resilient.json file to AppScan Issue Gateway. I have included a generic client in the example directory. For more info on that, see below.
 
 #The Generic Client
 AIG_GenericClient.py is included in the example directory. It uses "Requests" python library to submit your JSON file to AppScan Issue Gateway and monitor its progress.
-For useage instructions issue `python AIG_GenericClient.py -h`
+For useage instructions issue:
+`python AIG_GenericClient.py -h`
 <pre>
-  python AIG_GenericClient.py -h
   usage: AIG_GenericClient.py [-h] [-r REPEAT] host port jsonfile
 
   positional arguments:
