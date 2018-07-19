@@ -1,0 +1,4 @@
+logs/
+reports/
+/*.pem
+ASoCWrapperDriver.groovy
