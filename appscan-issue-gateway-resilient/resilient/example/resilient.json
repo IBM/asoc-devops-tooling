@@ -1,0 +1,21 @@
+{
+	"appscanData":{
+		"url":"https://appscan.ibmcloud.com",
+		"apikeyid":"<API KEY ID HERE>",
+		"apikeysecret":"<API KEY SECRET HERE>",
+		"appid":"<APP ID HERE>",
+		"policyids":"<POLICY ID HERE OR LEAVE BLANK>",
+		"issuestates":"New",
+		"maxissues": 1,
+		"issuefilters":{"Severity":"(Medium|Low|Informational)"}
+	},
+	"imData": {
+		"provider": "resilient",
+		"config": {
+			"app_id": "<APP ID HERE>",
+			"asoc_url": "https://appscan.ibmcloud.com",
+			"asoc_key_id": "<API KEY ID HERE>",
+			"asoc_key_secret": "<API KEY SECRET HERE>"
+		}
+	}
+}
