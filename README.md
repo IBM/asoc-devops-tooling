@@ -7,3 +7,8 @@ We welcome contributions!  [Read our Contributors guide](CONTRIBUTING.md)
 SaaS solution helping teams perform static, dynamic and mobile application security testing in the Cloud, letting you detect and fix security vulnerabilities early in the DevOps pipeline.
 
 [Taming the Open Source Beast with an Effective Application Security Testing Program](https://securityintelligence.com/taming-the-open-source-beast-with-an-effective-application-security-testing-program/)
+
+## Integrations
+* [Jenkins](/jenkins)
+* [Python Wrapper](/python-saclientutil)
+* [AppScan Issues Gateway Resilient](/appscan-issue-gateway-resilient)

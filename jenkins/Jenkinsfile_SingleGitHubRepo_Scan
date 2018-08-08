@@ -1,0 +1,337 @@
+#!groovy
+import jenkins.model.*
+import hudson.model.Result
+
+// Set Build Discarder property on branches to save the disk and disable concurrent builds
+properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '')), disableConcurrentBuilds(), [$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false]]);
+
+// Environment Variables for Jenkinsfile to create a Jenkins Docker Slave Image
+// EXECUTOR = Docker Label in your Jenkins Docker Template you want to run this build in Jenkins Docker Cloud defined at (https://yourjenkins/configure).
+env.EXECUTOR=''
+
+// GITHUB_ORG_NAME = GitHub Organization Name (https://github.com/GITHUB_ORG_NAME)
+env.GITHUB_ORG_NAME=''
+
+// GITHUB_REPO_NAME = The value in the URL to your GitHub repository (https://github.com/<GITHUB_ORG_NAME>/<GITHUB_REPO_NAME>/) if this build will run against a single repository specificed in this variable
+env.GITHUB_REPO_NAME=''
+
+// GITHUB_ISSUE_BOARD = GitHub Repository Name for where your team tracks its issues (https://github.com/GITHUB_ORG_NAME/GITHUB_ISSUE_BOARD)
+env.GITHUB_ISSUE_BOARD=''
+
+// GITHUB_API = the domain api for your GitHub instance.  Enterpise (github.x.com/api/v3) GitHub.com (api.github.com)
+env.GITHUB_API=''
+
+// GITHUB_DOMAIN = the domain of your GitHub instance.  Enterpise (github.x.com) GitHub.com (github.com)
+env.GITHUB_DOMAIN=''
+
+// ASOC_CREDENTIAL = Application Security on Cloud Credential created on your Jenkins Server.  This is the ID value in your https://jenkins/credentials/ table
+env.ASOC_CREDENTIAL=''
+
+// ASOC_APPLICATION_ID = This is the Application ID for the ASoC Application created to store your scan results. (ie. https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/$ASOC_APPLICATION_ID/scans)
+env.ASOC_APPLICATION_ID=''
+
+// JENKINS_GITHUB_CREDENTIAL = API Access Token for your GitHub Credential set on your Jenkins Server.  This is the ID value in your https://jenkins/credentials/ table
+env.JENKINS_GITHUB_CREDENTIAL=''
+
+// SLACK_CHANNEL = Setting a value here of #yourslack channel will overwrite the Global Configuration default slack channel of your Jenkins master for your build.
+//                 If leaving blank the build will post to your Global Configuration Slack Channel settings.
+env.SLACK_CHANNEL=''
+
+// ART = TRUE | FALSE if you are using Artifactory in your Pipeline
+env.ART=''
+
+// ART_URL = Artifactory Generic Repository URL (ie. https://myart.art.com/artifactory/my-generic-repo)
+env.ART_URL=''
+
+// JENKINS_ART_CREDENTIALS = This is the ID of the Artifactory Username | Password Credential in Jenkins.  This is the ID value in your https://jenkins/credentials/ table
+env.JENKINS_ART_CREDENTIALS=''
+
+// BUILD_VERSION we want to tag the file name with for cold storage in a Generic Repository in Artifactory
+env.BUILD_VERSION=''
+
+withCredentials([usernamePassword(credentialsId: "$JENKINS_GITHUB_CREDENTIAL", passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_USERNAME'), usernamePassword(credentialsId: "$ASOC_CREDENTIAL", passwordVariable: 'ASOC_SECRET', usernameVariable: 'ASOC_ID'), usernamePassword(credentialsId: "$JENKINS_ART_CREDENTIALS", passwordVariable: 'ART_PW', usernameVariable: 'ART_USER')]) {
+  node ("$EXECUTOR") {
+    stage("Clone GitHub Repository ${GITHUB_REPO_NAME}") {
+      checkout scm;
+    }
+    stage("Application Security on Cloud Analysis for GitHub Repo: ${GITHUB_REPO_NAME}") {
+      sh '''#!/bin/bash
+
+              # checkOS - This function checks the Application Security on Cloud Static Analyzer Operating System support
+              #           for Linux based Jenkins executor nodes
+              function checkOS {
+
+                  if [ -f /etc/debian_version ]
+                  then
+                    sudo apt-get -y update;
+                    sudo apt-get -y install gcc-multilib;
+                    sudo apt-get -y install lib32stdc++6;
+                    sudo apt-get -y update;
+                    mkdir -p ~/ASOC;
+                  elif [ -f /etc/redhat-release ]
+                  then
+                    sudo yum -y update;
+                    sudo yum -y install gcc-multilib;
+                    sudo yum -y install lib32stdc++6;
+                    sudo yum -y update;
+                  else
+                    echo "ERROR: Operating System NOT SUPPORTED";
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  fi
+                }
+
+                # downloadASoCAnalyzer - This function will download the latest Linux Application Security on Cloud Static Analyzer from the IBM Cloud
+                function downloadASoCAnalyzer {
+
+                  echo "Sleeping 30 seconds before Analyzer Download";
+                  sleep 30;
+                  curl https://appscan.ibmcloud.com/api/SCX/StaticAnalyzer/SAClientUtil?os=linux --output ~/ASOC/ASoC-Client.zip;
+
+                }
+
+                # generateIRX - This function will look for supported code to scan resulting in an IRX file descriptor
+                function generateIRX {
+                  unzip -q ~/ASOC/ASoC-Client.zip -d ~/ASOC;
+                  cd ~/ASOC/SAClientUtil*;
+                  ASOC_CLIENT_DIR=`pwd`;
+                  chmod -R 777 ~/ASOC/*;
+                  cd ${WORKSPACE};
+                  `pwd`;
+                  ls -la;
+                  ${ASOC_CLIENT_DIR}/bin/appscan.sh api_login -P "${ASOC_SECRET}" -u "${ASOC_ID}" -persist
+                  ${ASOC_CLIENT_DIR}/bin/appscan.sh version
+
+                  # Generate IRX file against code branch for Application Security on Cloud
+                  ${ASOC_CLIENT_DIR}/bin/appscan.sh prepare -d /tmp -n "${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}-scan" -t -v &> /tmp/PREPARE_CHECK
+
+                  # Check for possible return status' from Application Security on Cloud IRX generation
+                  if grep -Fq 'IRX file generation successful' /tmp/PREPARE_CHECK
+                  then
+                    echo "IRX file generation successful";
+                    echo "${ASOC_GUIDE}";
+                  elif grep -Fq 'The prepare operation did not find any known scan file types' /tmp/PREPARE_CHECK
+                  then
+                    echo "The prepare operation did not find any known scan file types";
+                    cat /tmp/PREPARE_CHECK;
+                    ASOC_GUIDE="2";
+                    echo "${ASOC_GUIDE}"  >> /tmp/stepResult.out;
+                    exit 0;
+                  elif grep -Fq 'Please update the file and rerun the command' /tmp/PREPARE_CHECK
+                  then
+                    echo "ERROR: Please update the file and rerun the command";
+                    cat /tmp/PREPARE_CHECK;
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  else
+                    echo "ERROR: We were unable to directly determine the failure during IRX generation.  See the log output below:";
+                    cat /tmp/PREPARE_CHECK;
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  fi
+
+                  # Check for Application Security on Cloud IRX generation failure
+                  if [ -e "/tmp/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}-scan_failed.irx" ]
+                  then
+                    echo "ERROR: IRX generation failed";
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  fi
+                }
+
+                # queueScanAnalysis - This function will send the generated IRX file to the Application Security on Cloud service for risk evaluation
+                function queueScanAnalysis {
+                  cd ~/ASOC/SAClientUtil*;
+                  ASOC_CLIENT_DIR=`pwd`;
+                  chmod -R 777 ~/ASOC/*;
+                  cd ${WORKSPACE};
+
+                  # Queue Application Security on Cloud security analysis
+                  ASOC_JOB_ID=`${ASOC_CLIENT_DIR}/bin/appscan.sh queue_analysis -a ${ASOC_APPLICATION_ID} -f /tmp/"${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}-scan".irx -n "${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}"-static`
+
+                  # Error Check for a failed Application Security on Cloud queue_analysis
+                  if [ -z ${ASOC_JOB_ID} ]
+                  then
+                    echo "ERROR: Application Security on Cloud Job ID was unable to be determined or started";
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  fi
+
+                  # Get the Application Security on Cloud Job ID from the queue_analysis return code
+                  ASOC_JOB_ID=`echo ${ASOC_JOB_ID} | awk -F'100% transferred ' '{print $2}'`
+                  echo "ASOC_JOB_ID=${ASOC_JOB_ID}" >> ${WORKSPACE}/ASOC_JOB_ID.properties
+                  . "${WORKSPACE}/ASOC_JOB_ID.properties"
+
+                  # Set loop status to Pending
+                  ASOC_JOB_STATUS="Pending"
+
+                    while [ "${ASOC_JOB_STATUS}" != "Ready" ]
+                    do
+                      echo "Sleeping 15 seconds and check status";
+                      sleep 15;
+
+                      # Check the Application Security on Cloud analysis status
+                      ASOC_JOB_STATUS=`${ASOC_CLIENT_DIR}/bin/appscan.sh status -i "${ASOC_JOB_ID}"`
+                      echo "Job Status: ${ASOC_JOB_STATUS}";
+
+                      # Check for Errors during the Application Security on Cloud pending analysis
+                      if [ "${ASOC_JOB_STATUS}" == "FailedToScan" ] || [ "${ASOC_JOB_STATUS}" == "PendingSupport" ] || [ "${ASOC_JOB_STATUS}" == "ManuallyStopped" ] || [ "${ASOC_JOB_STATUS}" == "None" ] || [ "${ASOC_JOB_STATUS}" == "ReadyIncomplete" ] || [ "${ASOC_JOB_STATUS}" == "FinishedRunningWithErrors" ]
+                      then
+                        echo "ERROR: IRX needs evaluation & scan needs to be run again";
+                        ASOC_GUIDE="1";
+                        echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                        exit "${ASOC_GUIDE}";
+                      fi
+                    done
+                 }
+
+                # uploadResultsToArtifactory - This function queries the Application Security on Cloud Job ID and downloads the results from the analysis
+                #                              to the jenkins executor node to store the analysis results for the master branch of code in JFrog Artifactory
+                function uploadResultsToArtifactory {
+                  cd ~/ASOC/SAClientUtil*;
+                  ASOC_CLIENT_DIR=`pwd`;
+                  chmod -R 777 ~/ASOC/*;
+                  cd ${WORKSPACE};
+                  . ${WORKSPACE}/ASOC_JOB_ID.properties;
+
+                  # Run ASOC CLI to download results
+                  ${ASOC_CLIENT_DIR}/bin/appscan.sh get_result -d ${WORKSPACE}/"${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}".html -i ${ASOC_JOB_ID} -t html
+
+                  # Upload current scan to JFrog Generic Repository
+                  curl -H "X-JFrog-Art-Api:${ART_PW}" -X PUT "${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html" -T "${WORKSPACE}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html"
+
+                  # Verify Artifactory Upload was successful
+                  if [ "$?" == "0" ]
+                  then
+                    echo "SUCCESS: We successfully uploaded ${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html";
+                    echo "${ASOC_GUIDE}";
+                  else
+                    echo "ERROR: We were unable to upload ${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html";
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}"  >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  fi
+
+                  # Upload current scan as latest using BUILD_VERSION tag to JFrog Generic Repository
+                  curl -H "X-JFrog-Art-Api:${ART_PW}" -X PUT "${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}.html" -T "${WORKSPACE}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html"
+
+                  # Verify Artifactory Upload was successful
+                  if [ "$?" == "0" ]
+                  then
+                    echo "SUCCESS: We successfully uploaded ${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html";
+                    echo "${ASOC_GUIDE}";
+                  else
+                    echo "ERROR: We were unable to upload ${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html";
+                    ASOC_GUIDE="1";
+                    echo "${ASOC_GUIDE}"  >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}"
+                  fi
+                }
+
+                # openGitHubIssues - This function will look at the results of the analysis checking to see if any vulnerabilities were discovered
+                #                    Discovered vulnerabilities will result in the opening of a GitHub Issue tagged with Defect, High Priority, Security Scan
+                #                    and a description link pointing to the downloadable report
+                function openGitHubIssues {
+                  cd ~/ASOC/SAClientUtil*;
+                  ASOC_CLIENT_DIR=`pwd`;
+                  chmod -R 777 ~/ASOC/*;
+                  cd ${WORKSPACE};
+                  . ${WORKSPACE}/ASOC_JOB_ID.properties;
+                  DATE=`date '+%Y-%m-%d %H:%M:%S'`;
+
+                  # Download Application Security on Cloud Report Summary
+                  ${ASOC_CLIENT_DIR}/bin/appscan.sh info -i ${ASOC_JOB_ID} &> /tmp/GHE_CHECK
+
+                  # Use one of the comments below to control which URL for download you include.  If not using Artifactory then use the ASOC_SECURITY_REPORT_URL line.
+                  if [ "${ART}" == "TRUE" ]
+                  then
+                    SECURITY_REPORT_URL="You can download your report from Artifactory by clicking the following link: ${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html.";
+                  else
+                    SECURITY_REPORT_URL="Your report is also tracked in Application Security on Cloud at:  https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans and download the ${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}-static Security Report";
+                  fi
+                  cat /tmp/CHE_CHECK;
+
+                  # Check the Application Security on Cloud Report Summary for vulnerabilities
+                  if grep -Fq '"NIssuesFound":0' /tmp/GHE_CHECK
+                  then
+                    echo "No Security Vulnerabilities were found";
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  else
+                    echo "Open GitHub Issue for Discovered Vulnerabilities";
+                    echo '{"title": "'${GITHUB_REPO_NAME}' Repository Static Security Scan Bug Report '${DATE}'", "body": " * '${SECURITY_REPORT_URL}'", "labels": ["High Priority", "Security Scan"]}' >> ${WORKSPACE}/issue_report.json;
+                    curl -X POST -u "${GITHUB_USERNAME}":"${GITHUB_ACCESS_TOKEN}" -H 'Content-Type: application/json' -d '@issue_report.json' https://${GITHUB_API}/repos/${GITHUB_ORG_NAME}/${GITHUB_ISSUE_BOARD}/issues;
+                    echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
+                    exit "${ASOC_GUIDE}";
+                  fi
+                }
+
+
+                # ASOC_GUIDE will be used for exit status
+                ASOC_GUIDE="0"
+
+                # Check Operating System Support for Linux
+                checkOS
+
+                # Download ASoC Static Analyzer
+                downloadASoCAnalyzer
+
+                # Generate Application Security on Cloud IRX file
+                generateIRX
+
+                # Queue Application Security on Cloud Scan Analysis with IRX file
+                queueScanAnalysis
+
+                # Download Results from Application Security on Cloud and upload to JFrog Artifactory
+                if [ "${ART}" == "TRUE" ]
+                then
+                  uploadResultsToArtifactory
+                fi
+
+                # Open GitHub Issues if Security Vulnerabilities were discovered
+                openGitHubIssues
+              '''
+
+              def stepResult = readFile('/tmp/stepResult.out');
+              stepResult = stepResult.trim();
+              println("Step Result: " + stepResult);
+              if (stepResult.toString().equalsIgnoreCase("1")) {
+                println("ERROR: A failure occurred along the way during the pipeline.  Check the Jenkins Logs for the last standard out error statement: ");
+
+                //Send Slack messages about the Build Results
+                slackSend channel: "${SLACK_CHANNEL}", color: '#FF0000', message: "Problems occured during Static Security Scans for repository https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}.\n Please investigate the <${BUILD_URL}|Build Result> .", teamDomain: ''
+
+              } else if (stepResult.toString().equalsIgnoreCase("2")) {
+                println("NO SUPPORTED CODE FOUND: We didn't find any supported code for this repository");
+
+                //Send Slack messages about the Build Results
+                slackSend channel: "${SLACK_CHANNEL}", color: '#008000', message: "<${BUILD_URL}|Static Security Scans have Completed> for repository https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME} found NO CODE SUPPORTED by Application Security on Cloud to scan.", teamDomain: ''
+
+              } else {
+                println("SUCCESS: You can find your reports at https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans");
+
+                //Send Slack messages about the Build Results
+                slackSend channel: "${SLACK_CHANNEL}", color: '#008000', message: "<${BUILD_URL}|Static Security Scans have Completed> for repository https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}.\n Download the report at <https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans|Application Security on Cloud Results>.\n Vulnerability reports have been opened on the https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_ISSUE_BOARD} Board with Labels: High Priority, Security Scan", teamDomain: ''
+
+              }
+            }
+  }
+}
+
+
+
+//Use this method if integrating this Jenkinsfile for reporting Pull Request status checks on a single repository
+void setBuildStatus(String message, String state) {
+  step([
+      $class: "GitHubCommitStatusSetter",
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://$GITHUB_DOMAIN/$GITHUB_ORG_NAME/$GITHUB_REPO_NAME"],
+      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/asoc-sast/build-status"],
+      errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+      statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
+  ]);
+}
