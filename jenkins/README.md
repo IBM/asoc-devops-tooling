@@ -1,8 +1,8 @@
 # IBM Application Security on Cloud Jenkins Integrations
 ---
-The files located in this folder are end to end automation using the [Application Security on Cloud service](https://www.ibm.com/us-en/marketplace/application-security-on-cloud/resources) to run **SAST (Static Application Security Testing)** against source code orchestrated with [Jenkins](https://jenkins.io/).
+The files located in this folder are end to end automation using the [IBM Application Security on Cloud service](http://ibm.biz/ASoCLinkFromGitRepo) to run **SAST (Static Application Security Testing)** against source code orchestrated with [Jenkins](https://jenkins.io/).
 
-**It is imperative that we know the the most about the security status of our code before leaving Source Control Management systems and shipping code further down the pipeline.**
+**It is imperative that we know the most about the security status of our code before leaving Source Control Management systems and shipping code further down the pipeline.**
 
 Below are [Jenkins Pipeline](https://jenkins.io/doc/book/pipeline/) templates using the [Scripted Pipeline Syntax](https://jenkins.io/doc/book/pipeline/#scripted-pipeline-fundamentals) and guides to help you implement this control before entering continuous integration.
 
@@ -11,6 +11,7 @@ Below are [Jenkins Pipeline](https://jenkins.io/doc/book/pipeline/) templates us
 * [GitHub Enterprise](https://enterprise.github.com/home)
 * [Jenkins](https://jenkins.io/)
 * [JFrog Artifactory](https://jfrog.com/artifactory/)
+* [IBM Application Security on Cloud](http://ibm.biz/ASoCLinkFromGitRepo)
 
 ## Supported Jenkins Executor Operating System
 * Any Linux distribution
@@ -59,13 +60,41 @@ Below are [Jenkins Pipeline](https://jenkins.io/doc/book/pipeline/) templates us
 * Visit `https://yourjenkins/credentials/store/system/domain/_/`
 * Click **Add Credentials**.
 * In the **Kind** drop-down list, select **IBM Application Security on Cloud Credentials**.
-* Enter your [IBM ASoC generated API key details](https://www.ibm.com/support/knowledgecenter/SSYJJF_1.0.0/ApplicationSecurityonCloud/appseccloud_generate_api_key_cm.html).
+* Enter your [IBM ASoC generated API Key ID](https://www.ibm.com/support/knowledgecenter/SSYJJF_1.0.0/ApplicationSecurityonCloud/appseccloud_generate_api_key_cm.html) into the **ID** field.
+* Enter your [API Key Secret](https://www.ibm.com/support/knowledgecenter/SSYJJF_1.0.0/ApplicationSecurityonCloud/appseccloud_generate_api_key_cm.html) into the **Secret** field.
+
+### Add GitHub API Key as Credentials to Jenkins Master
+* Visit `https://yourjenkins/credentials/store/system/domain/_/`
+* Click **Add Credentials**.
+* In the **Kind** drop-down list, select **Username with password**.
+* Enter your [GitHub ID]() into the **Username** field.
+* Enter your [GitHub API Token Credential]() into the **Password** field.
+* Give your **ID** field something meaningful as a variable name to reference in the Jenkinsfile later.  ( ie. `github.access.token`)
+
+### Add Artifactory API Key as Credentials to Jenkins Master
+> **NOTE:** This isn't necessary if you don't have Artifactory and can be toggled by a variable in the Jenkinsfile itself for use.
+
+* Visit `https://yourjenkins/credentials/store/system/domain/_/`
+* Click **Add Credentials**.
+* In the **Kind** drop-down list, select **Username with password**.
+* Enter your **Artifactory Username** into the **Username** field.
+* Enter your [Artifactory API Token Credential](https://www.jfrog.com/confluence/display/RTF/Updating+Your+Profile#UpdatingYourProfile-APIKey) into the **Password** field.
+* Give your **ID** field something meaningful as a variable name to reference in the Jenkinsfile later.  ( ie. `artifactory.access.token`)
 
 
 ## Scan Single GitHub Repository
 > **NOTE:**  For most adopters this will be the common scenario used and the recommended approach to drive a review of the repository's code vulnerability reports prior to a Pull Request merger.
 
+* In your Jenkins master [define a multi-branch pipeline in SCM](https://jenkins.io/doc/tutorials/build-a-multibranch-pipeline-project/)
+* Add [Jenkinsfile_SingleGitHubRepo_Scan](Jenkinsfile_SingleGitHubRepo_Scan) to your repository that you configured in your pipeline on your Jenkins master in the previous step.
+* Complete the Environment Variable Properties in the `Jenkinsfile` we provided
 
 
 ## Scan all repositories in a GitHub Organization
-...
+> **NOTE:** The value of this type of scan is to help a team baseline the Security status of their current code base.  We do not recommend using this type of scan routinely as this is to help a Security team or Focal get an understanding of an entire code base quickly.  Ideally you will move to the **Scan Single GitHub Repository** approach above immediately for all repositories.
+
+**If you are NOT using a [Legacy Docker Swarm cluster](https://www.ibm.com/cloud/garage/experience/code/bradley_herrin_jenkins_for_building_bluemix_services) or Kubernetes for scalable executors on demand we highly advise you don't attempt this as it will add a long queue wait to the Jenkins master which if not properly tuned may over power your JVM settings on the master node.** :smile:
+
+* In your Jenkins master [define a pipeline in SCM](https://jenkins.io/doc/book/pipeline/getting-started/#defining-a-pipeline-in-scm)
+* Add [Jenkinsfile_GitHub_Org_Scan](Jenkinsfile_GitHub_Org_Scan) to the repository that you configured in your pipeline on your Jenkins master in the previous step.
+* Complete the Environment Variable Properties in the `Jenkinsfile` we provided

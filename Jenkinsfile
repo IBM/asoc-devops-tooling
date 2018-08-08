@@ -13,7 +13,7 @@ env.EXECUTOR=''
 env.GITHUB_ORG_NAME=''
 
 // GITHUB_ISSUE_BOARD = GitHub Repository Name for where your team tracks its issues (https://github.com/GITHUB_ORG_NAME/GITHUB_ISSUE_BOARD)
-env.GITHUB_ISSUE_BOARD=''
+env.GITHUB_ISSUE_BOARD='k'
 
 // GITHUB_API = the domain api for your GitHub instance.  Enterpise (github.x.com/api/v3) GitHub.com (api.github.com)
 env.GITHUB_API=''
@@ -22,7 +22,7 @@ env.GITHUB_API=''
 env.GITHUB_DOMAIN=''
 
 // ASOC_CREDENTIAL = Application Security on Cloud Credential created on your Jenkins Server.  This is the ID value in your https://jenkins/credentials/ table
-env.ASOC_CREDENTIAL=''
+env.ASOC_CREDENTIAL='a'
 
 // ASOC_APPLICATION_ID = This is the Application ID for the ASoC Application created to store your scan results. (ie. https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/$ASOC_APPLICATION_ID/scans)
 env.ASOC_APPLICATION_ID=''
@@ -38,7 +38,7 @@ env.SLACK_CHANNEL=''
 env.ART=''
 
 // ART_URL = Artifactory Generic Repository URL (ie. https://myart.art.com/artifactory/my-generic-repo)
-env.ART_URL=''
+env.ART_URL='l'
 
 // JENKINS_ART_CREDENTIALS = This is the ID of the Artifactory Username | Password Credential in Jenkins.  This is the ID value in your https://jenkins/credentials/ table
 env.JENKINS_ART_CREDENTIALS=''
@@ -48,28 +48,26 @@ env.BUILD_VERSION=''
 
 withCredentials([usernamePassword(credentialsId: "$JENKINS_GITHUB_CREDENTIAL", passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_USERNAME'), usernamePassword(credentialsId: "$ASOC_CREDENTIAL", passwordVariable: 'ASOC_SECRET', usernameVariable: 'ASOC_ID'), usernamePassword(credentialsId: "$JENKINS_ART_CREDENTIALS", passwordVariable: 'ART_PW', usernameVariable: 'ART_USER')]) {
   node ("$EXECUTOR") {
-    stage("Gather GitHub Repository List") {
+    stage("Gather GitHub Organization Repository List") {
       sh '''#!/bin/bash
-          set +e
-          counter=1
+          counter=1;
           lastPage=`curl -I -H "Authorization: token $GITHUB_ACCESS_TOKEN" https://${GITHUB_API}/orgs/${GITHUB_ORG_NAME}/repos?per_page=100 | grep "Link:" | awk -F', ' '{print $2}' | awk -F'; ' '{print $1}' | cut -d'=' -f 3 | cut -d'>' -f 1`;
-             while [ $counter -le $lastPage ]
+             while [[ "$counter" -le "$lastPage" ]]
              do
                `curl -H "Authorization: token $GITHUB_ACCESS_TOKEN" "https://${GITHUB_API}/orgs/${GITHUB_ORG_NAME}/repos?per_page=100&page=${counter}" | grep "clone_url" | awk -F': "' '{print $2}' | sed -e 's/",//g' | awk -F"${GITHUB_ORG_NAME}/" '{print $2}' | awk -F'.git' '{print $1}' >> ${WORKSPACE}/repoList.txt`
                ((counter++))
              done
           cat ${WORKSPACE}/repoList.txt;
-          ls -la ${WORKSPACE}
+          ls -la ${WORKSPACE};
         '''
         fileExists 'repoList.txt'
         def runParallel = [:]
         for (String repo : readFile('repoList.txt').split("\r?\n")) {
-            println repo
+            //println repo
             def cloneStep = "Run Static Security Scan against ${repo}"
             runParallel[cloneStep] = executeStep(repo)
-            //Batch the parallel nodes so not to overload the Legacy Docker Swarm, Docker Swarm, Kubernetes Cluster, or individual executor nodes
-            sleep 300
         }
+        parallel runParallel
     }
   }
 }
@@ -90,7 +88,7 @@ def executeStep(String GITHUB_REPO_NAME) {
       withCredentials([usernamePassword(credentialsId: "$JENKINS_GITHUB_CREDENTIAL", passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_USERNAME'), usernamePassword(credentialsId: "$ASOC_CREDENTIAL", passwordVariable: 'ASOC_SECRET', usernameVariable: 'ASOC_ID'), usernamePassword(credentialsId: "$JENKINS_ART_CREDENTIALS", passwordVariable: 'ART_PW', usernameVariable: 'ART_USER')]) {
         node {
           //This is to ensure GITHUB_REPO_NAME stays unique to each container and is not a global variable across containers
-          withEnv(["GITHUB_REPO_NAME=$GITHUB_REPO_NAME", "BRANCH_NAME=$BRANCH_NAME"]) {
+          withEnv(["GITHUB_REPO_NAME=$GITHUB_REPO_NAME"]) {
           stage("Clone GitHub Repository ${GITHUB_REPO_NAME}") {
                 checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${GITHUB_REPO_NAME}"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: "$JENKINS_GITHUB_CREDENTIAL", url: "https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}"]]])
           }
@@ -305,7 +303,7 @@ def executeStep(String GITHUB_REPO_NAME) {
                         else
                           echo "Open GitHub Issue for Discovered Vulnerabilities";
                           echo '{"title": "'${GITHUB_REPO_NAME}' Repository Static Security Scan Bug Report '${DATE}'", "body": " * '${SECURITY_REPORT_URL}'", "labels": ["High Priority", "Security Scan"]}' >> ${WORKSPACE}/issue_report.json;
-                          curl -X POST -u "${GITHUB_USERNAME}":"${GITHUB_ACCESS_TOKEN}" -H 'Content-Type: application/json' -d '@issue_report.json' https://${GITHUB_API}/repos/${GITHUB_ORG_NAME}/${GITHUB_ISSUE_BOARD}/issues;
+                          curl -X POST -u "${GITHUB_USERNAME}":"${GITHUB_ACCESS_TOKEN}" -H 'Content-Type: application/json' -d '@issue_report.json' https://${GITHUB_API}/repos/watson-finance/${GITHUB_ISSUE_BOARD}/issues;
                           echo "${ASOC_GUIDE}" >> /tmp/stepResult.out;
                           exit "${ASOC_GUIDE}";
                         fi
