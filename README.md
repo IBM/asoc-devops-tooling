@@ -11,3 +11,4 @@ SaaS solution helping teams perform static, dynamic and mobile application secur
 ## Integrations
 * [Jenkins](/jenkins)
 * [Python Wrapper](/python-saclientutil)
+* [AppScan Issues Gateway Resilient](/appscan-issue-gateway-resilient)

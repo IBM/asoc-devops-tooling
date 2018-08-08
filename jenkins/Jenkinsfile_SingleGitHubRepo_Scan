@@ -33,9 +33,6 @@ env.ASOC_APPLICATION_ID=''
 // JENKINS_GITHUB_CREDENTIAL = API Access Token for your GitHub Credential set on your Jenkins Server.  This is the ID value in your https://jenkins/credentials/ table
 env.JENKINS_GITHUB_CREDENTIAL=''
 
-// JENKINS_MULTI_BRANCH_PIPELINE = TRUE | FALSE; Set to TRUE if this is for a Jenkins Multi-Branch Pipeline Job against a single GitHub Repository.  Set to False if this is a Single Jenkins Pipeline against a Single Repository or entire GitHub Organization.
-env.JENKINS_MULTI_BRANCH_PIPELINE=''
-
 // SLACK_CHANNEL = Setting a value here of #yourslack channel will overwrite the Global Configuration default slack channel of your Jenkins master for your build.
 //                 If leaving blank the build will post to your Global Configuration Slack Channel settings.
 env.SLACK_CHANNEL=''
@@ -54,15 +51,8 @@ env.BUILD_VERSION=''
 
 withCredentials([usernamePassword(credentialsId: "$JENKINS_GITHUB_CREDENTIAL", passwordVariable: 'GITHUB_ACCESS_TOKEN', usernameVariable: 'GITHUB_USERNAME'), usernamePassword(credentialsId: "$ASOC_CREDENTIAL", passwordVariable: 'ASOC_SECRET', usernameVariable: 'ASOC_ID'), usernamePassword(credentialsId: "$JENKINS_ART_CREDENTIALS", passwordVariable: 'ART_PW', usernameVariable: 'ART_USER')]) {
   node ("$EXECUTOR") {
-   withEnv(["GITHUB_REPO_NAME=$GITHUB_REPO_NAME", "BRANCH_NAME=$BRANCH_NAME"]) {
     stage("Clone GitHub Repository ${GITHUB_REPO_NAME}") {
-
-        if ("${JENKINS_MULTI_BRANCH_PIPELINE}" == 'TRUE') {
-          checkout([$class: 'GitSCM', branches: [[name: "*/$BRANCH_NAME"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${GITHUB_REPO_NAME}"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: "$JENKINS_GITHUB_CREDENTIAL", url: "https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}"]]])
-        } else {
-          checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${GITHUB_REPO_NAME}"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: "$JENKINS_GITHUB_CREDENTIAL", url: "https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}"]]])
-        }
-
+      checkout scm;
     }
     stage("Application Security on Cloud Analysis for GitHub Repo: ${GITHUB_REPO_NAME}") {
       sh '''#!/bin/bash
@@ -107,7 +97,7 @@ withCredentials([usernamePassword(credentialsId: "$JENKINS_GITHUB_CREDENTIAL", p
                   cd ~/ASOC/SAClientUtil*;
                   ASOC_CLIENT_DIR=`pwd`;
                   chmod -R 777 ~/ASOC/*;
-                  cd ${WORKSPACE}/${GITHUB_REPO_NAME};
+                  cd ${WORKSPACE};
                   `pwd`;
                   ls -la;
                   ${ASOC_CLIENT_DIR}/bin/appscan.sh api_login -P "${ASOC_SECRET}" -u "${ASOC_ID}" -persist
@@ -330,7 +320,6 @@ withCredentials([usernamePassword(credentialsId: "$JENKINS_GITHUB_CREDENTIAL", p
 
               }
             }
-    }
   }
 }
 
