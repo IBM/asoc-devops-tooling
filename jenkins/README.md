@@ -116,7 +116,7 @@ Below are [Jenkins Pipeline](https://jenkins.io/doc/book/pipeline/) templates us
 * In your Jenkins master [define a multi-branch pipeline in SCM](https://jenkins.io/doc/tutorials/build-a-multibranch-pipeline-project/)
 * Add [Jenkinsfile_SingleGitHubRepo_Scan](Jenkinsfile_SingleGitHubRepo_Scan) to your repository that you configured in your pipeline on your Jenkins master in the previous step.
 * Complete the Environment Variable Properties in the `Jenkinsfile` we provided
-* Add Jenkins GitHub Pull Request Webhook at your Repository Settings tab (`https://github.ibm.com/<your organization>/<your repository>/settings/hooks`).  
+* Add Jenkins GitHub Pull Request Webhook at your Repository Settings tab (`https://github.com/<your organization>/<your repository>/settings/hooks`).  
 * Select **Add webhook**.
   * **Payload url**: `https://myjenkins/github-webhook/`
   * Content type: **application/x-www-form-urlencoded**
