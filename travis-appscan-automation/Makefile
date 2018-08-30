@@ -10,8 +10,12 @@ config-arch:
 
 # Gets the ASoC Client Tool and configures it
 asoc-tool: config-arch
+	$(eval DIR := $(shell pwd))
 	curl -o client.zip $(APPSCAN_TOOL)
-	unzip client.zip
+	mkdir client ; mkdir tool
+	unzip -qq client.zip -d client
+	cd client ; ls | xargs -I {} sh -c "cp -r {}/* $(DIR)/tool"
+	rm -rf client
 
 clone-repo:
 	git clone $(GIT_REPO)
@@ -20,7 +24,7 @@ clone-repo:
 generate-irx: 
 	$(eval DIR := $(shell pwd))
 
-	cd $(PROJECT_NAME); $(DIR)/SAClientUtil.6.0.1231/bin/appscan.sh prepare -oso
+	cd $(PROJECT_NAME); $(DIR)/tool/bin/appscan.sh prepare -oso
 
 # Login to the AppScan API
 api-login:
