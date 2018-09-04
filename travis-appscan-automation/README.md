@@ -14,6 +14,7 @@ When a Travis build is kicked off, the build will:
 1. You have an account on [AppScan](https://appscan.ibmcloud.com/AsoCUI/serviceui/home) already. [If you need an account, see instructions here.](https://w3-connections.ibm.com/wikis/home?lang=en-us#!/wiki/W2d45edf688c2_4f09_9d5d_bbddab46412e/page/ASoC%20Onboarding)
 2. You have obtained an API Key and a Secret from the AppScan website.
 3. The file types in your project are supported by the ASoC tool. [Static analyzer supported types](https://www.ibm.com/support/knowledgecenter/SSYJJF_1.0.0/ApplicationSecurityonCloud/src_sys_req.html#src_sys_req__scan) and [open source supported types](https://www.ibm.com/support/knowledgecenter/SSYJJF_1.0.0/ApplicationSecurityonCloud/appseccloud_scanning_opensource.html) 
+4. Your repository is connected to [Travis](https://travis-ci.org).
 ## Adoption
 #### In the Configfile, change
 1. APP_NAME - The name of your application on the AppScan site.
@@ -21,6 +22,7 @@ When a Travis build is kicked off, the build will:
 #### In the Travis Settings, add
 1. API_KEY - your API Key used to access the AppScan [click here to get it](https://appscan.ibmcloud.com/AsoCUI/serviceui/main/admin/apiKey)
 2. SECRET - the secret that was generated when you generate the API Key above
+3. Add your github SSH key to the SSH Key section if your repository requires an ssh key to clone.
 #### If you have an application on the AppScan site, get your Application ID from the UI for the API
 1. Go to https://appscan.ibmcloud.com/swagger/ui/index#!/Apps/Apps_GetApps and filter for your application.
 2. Copy the JSON response from the UI into the app.json file.
