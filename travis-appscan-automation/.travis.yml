@@ -1,0 +1,19 @@
+language: generic
+
+os: linux
+sudo: required
+dist: trusty
+
+branches:
+  only:
+    - /.*/
+
+install:
+  - make asoc-tool
+  - make clone-repo
+
+script:
+  - make generate-irx flag="-oso"
+  - make upload-file
+  - make run-scan
+  - make show-scan-id
