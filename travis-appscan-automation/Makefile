@@ -1,6 +1,6 @@
 include Configfile
-.PHONY: config-arch asoc-tool clone-repo generate-irx api-login upload-file \
-	get-app run-scan get-asset-group create-app
+.PHONY: config-arch asoc-tool clone-repo generate-irx generate-irx-oso \
+	api-login upload-file get-app run-scan get-asset-group create-app 
 
 # This will configure a 32-bit architecture on top of a 64-bit linux machine
 config-arch:
@@ -20,8 +20,15 @@ asoc-tool: config-arch
 clone-repo:
 	git clone $(GIT_REPO)
 
-# Generates the irx file for icp-cert-manager
+# Generates the irx file 
 generate-irx: 
+	$(eval DIR := $(shell pwd))
+
+	cd $(PROJECT_NAME); $(DIR)/tool/bin/appscan.sh prepare
+
+#TODO: look into passing in vars in makefile
+# Generates the irx file for icp-cert-manager with oso flag
+generate-irx-oso: 
 	$(eval DIR := $(shell pwd))
 
 	cd $(PROJECT_NAME); $(DIR)/tool/bin/appscan.sh prepare -oso
@@ -54,7 +61,8 @@ run-scan:
 	$(eval FILE_ID := "$(shell python getJson.py file.json "FileId")")
 	$(eval APP_ID := "$(shell python getJson.py app.json "Id")")
 
-	curl -X POST $(CONTENT_HEADER_JSON) $(ACCEPT_HEADER_JSON) $(AUTH) -d '{"ARSAFileId": $(FILE_ID), "ApplicationFileId": $(FILE_ID), "ScanName": "StaticAnalyzer", "EnableMailNotification": false, "Locale": "en-US", "AppId": $(APP_ID), "Execute": true, "Personal": false}' $(STATIC_SCAN_URL)
+	curl -o scan.json -X POST $(CONTENT_HEADER_JSON) $(ACCEPT_HEADER_JSON) $(AUTH) -d '{"ARSAFileId": $(FILE_ID), "ApplicationFileId": $(FILE_ID), "ScanName": "StaticAnalyzer", "EnableMailNotification": false, "Locale": "en-US", "AppId": $(APP_ID), "Execute": true, "Personal": false}' $(STATIC_SCAN_URL)
+	@echo 'SCAN ID: $(shell python getJson.py scan.json "Id")'
 
 get-asset-group:
 	$(eval TOKE := $(shell python getJson.py token.json "Token"))
