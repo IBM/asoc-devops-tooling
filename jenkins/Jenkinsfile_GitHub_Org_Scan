@@ -24,7 +24,7 @@ env.GITHUB_DOMAIN=''
 // ASOC_CREDENTIAL = Application Security on Cloud Credential created on your Jenkins Server.  This is the ID value in your https://jenkins/credentials/ table
 env.ASOC_CREDENTIAL=''
 
-// ASOC_APPLICATION_ID = This is the Application ID for the ASoC Application created to store your scan results. (ie. https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/$ASOC_APPLICATION_ID/scans)
+// ASOC_APPLICATION_ID = This is the Application ID for the ASoC Application created to store your scan results. (ie. https://cloud.appscan.com/AsoCUI/serviceui/main/myapps/oneapp/$ASOC_APPLICATION_ID/scans)
 env.ASOC_APPLICATION_ID=''
 
 // JENKINS_GITHUB_CREDENTIAL = API Access Token for your GitHub Credential set on your Jenkins Server.  This is the ID value in your https://jenkins/credentials/ table
@@ -127,7 +127,7 @@ def executeStep(String GITHUB_REPO_NAME) {
 
                         echo "Sleeping 30 seconds before Analyzer Download";
                         sleep 30;
-                        curl https://appscan.ibmcloud.com/api/SCX/StaticAnalyzer/SAClientUtil?os=linux --output ~/ASOC/ASoC-Client.zip;
+                        curl https://cloud.appscan.com/api/SCX/StaticAnalyzer/SAClientUtil?os=linux --output ~/ASOC/ASoC-Client.zip;
 
                       }
 
@@ -292,7 +292,7 @@ def executeStep(String GITHUB_REPO_NAME) {
                         then
                           SECURITY_REPORT_URL="You can download your report from Artifactory by clicking the following link: ${ART_URL}/scan-results/security/${GITHUB_REPO_NAME}/${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}.html.";
                         else
-                          SECURITY_REPORT_URL="Your report is also tracked in Application Security on Cloud at:  https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans and download the ${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}-static Security Report";
+                          SECURITY_REPORT_URL="Your report is also tracked in Application Security on Cloud at:  https://cloud.appscan.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans and download the ${GITHUB_REPO_NAME}-${BUILD_VERSION}-${BUILD_TIMESTAMP}-static Security Report";
                         fi
                         cat /tmp/CHE_CHECK;
 
@@ -353,10 +353,10 @@ def executeStep(String GITHUB_REPO_NAME) {
                       slackSend channel: "${SLACK_CHANNEL}", color: '#008000', message: "<${BUILD_URL}|Static Security Scans have Completed> for repository https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME} found NO CODE SUPPORTED by Application Security on Cloud to scan.", teamDomain: ''
 
                     } else {
-                      println("SUCCESS: You can find your reports at https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans");
+                      println("SUCCESS: You can find your reports at https://cloud.appscan.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans");
 
                       //Send Slack messages about the Build Results
-                      slackSend channel: "${SLACK_CHANNEL}", color: '#008000', message: "<${BUILD_URL}|Static Security Scans have Completed> for repository https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}.\n Download the report at <https://appscan.ibmcloud.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans|Application Security on Cloud Results>.\n Vulnerability reports have been opened on the https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_ISSUE_BOARD} Board with Labels: High Priority, Security Scan", teamDomain: ''
+                      slackSend channel: "${SLACK_CHANNEL}", color: '#008000', message: "<${BUILD_URL}|Static Security Scans have Completed> for repository https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_REPO_NAME}.\n Download the report at <https://cloud.appscan.com/AsoCUI/serviceui/main/myapps/oneapp/${ASOC_APPLICATION_ID}/scans|Application Security on Cloud Results>.\n Vulnerability reports have been opened on the https://${GITHUB_DOMAIN}/${GITHUB_ORG_NAME}/${GITHUB_ISSUE_BOARD} Board with Labels: High Priority, Security Scan", teamDomain: ''
 
                     }
             }
