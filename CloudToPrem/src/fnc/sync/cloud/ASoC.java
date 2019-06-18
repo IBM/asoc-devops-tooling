@@ -38,7 +38,7 @@ public class ASoC {
 		HttpClient httpClient = HttpClientBuilder.create().build();	
 		
 		try {
-			HttpPost request = new HttpPost("https://appscan.ibmcloud.com:443/"+URL);
+			HttpPost request = new HttpPost("https://cloud.appscan.com:443/"+URL);
 			StringEntity params = new StringEntity(requestBody.toString());
 			if(!this.Token.equals("")) request.addHeader("Authorization","Bearer "+Token);
 			request.addHeader("content-type","text/json");
@@ -61,7 +61,7 @@ public class ASoC {
 
 		try {
 			//System.out.print(requestBody);
-			HttpPut request = new HttpPut("https://appscan.ibmcloud.com:443/"+URL);
+			HttpPut request = new HttpPut("https://cloud.appscan.com:443/"+URL);
 			StringEntity params = new StringEntity(requestBody.toString());
 			if(!this.Token.equals("")) request.addHeader("Authorization","Bearer "+Token);
 			request.addHeader("content-type","text/json");
@@ -83,7 +83,7 @@ public class ASoC {
 		HttpClient httpClient = HttpClientBuilder.create().build();	
 		
 		try {
-			HttpGet request = new HttpGet("https://appscan.ibmcloud.com:443"+URL);
+			HttpGet request = new HttpGet("https://cloud.appscan.com:443"+URL);
 			if(!this.Token.equals("")) request.addHeader("Authorization","Bearer "+Token);
 			
 			HttpResponse response = httpClient.execute(request);
